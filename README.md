@@ -27,13 +27,32 @@ Real-world platforms like Spotify and YouTube use hybrid recommenders. **Collabo
 - `energy` (0–1): numeric; scored by closeness to the user's target
 - `acousticness` (0–1): numeric; rewarded if the user likes acoustic music
 - `title`, `artist`, `id`: used for display only, not for scoring
-- `tempo_bpm`, `valence`, `danceability`: loaded but not scored in v1. In this dataset, tempo and acousticness track energy almost perfectly (correlation 0.96 and −0.99), so scoring them as well would mostly double-count energy.
+- `tempo_bpm`, `valence`, `danceability`: loaded but not scored in v1. Across the 20-song catalog, tempo and acousticness closely track energy (correlation 0.89 and −0.92), so scoring them as well would mostly double-count energy. Valence (0.22–0.88) is the strongest candidate to add next (see Expected Biases).
 
 **`UserProfile`**
 - `favorite_genre`
 - `favorite_mood`
 - `target_energy` (0–1)
 - `likes_acoustic` (True/False)
+
+### Catalog
+
+`data/songs.csv` has 20 songs. The original 10 were expanded with 10 more to cover genres the starter file lacked (hip-hop, classical, country, metal, r&b, reggae, edm, folk) and moods it lacked (confident, melancholic, nostalgic, angry, romantic, uplifting, energetic, sad). A few songs deliberately break the usual "high energy = low acousticness" pattern. For example, *Campfire Anthem* is an upbeat folk song (energy 0.72) that is still very acoustic (0.85).
+
+### Example taste profile
+
+`src/main.py` uses this profile, a late-night study listener:
+
+```python
+user_prefs = {
+    "genre": "lofi",
+    "mood": "chill",
+    "energy": 0.40,
+    "likes_acoustic": True,
+}
+```
+
+**Can it tell "intense rock" from "chill lofi"?** Yes, clearly. *Library Rain* (chill lofi) scores 4.88 out of 5, while *Storm Runner* (intense rock) scores 0.54 and *Iron Tempest* (angry metal) scores 0.45. **Is it too narrow?** Somewhat. Only 3 songs are lofi and 3 are chill, so after the top 4 results every song earns points from energy and acoustic fit alone. In that range, *Paper Boats* (a sad folk song) scores 1.37, almost the same as *Coffee Shop Stories* (relaxed jazz, 1.42), because the profile has no way to say "calm but not sad."
 
 ### Algorithm Recipe
 
@@ -52,11 +71,26 @@ The energy term uses **distance, not raw value**. A user who wants energy 0.4 ge
 
 **Ranking Rule (many scores → a top-k list):** Score every song in the catalog, sort by score from highest to lowest (ties broken by title), and return the top `k`. The scoring rule decides how good one song is for this user. The ranking rule decides which songs to show and in what order. Keeping them separate means either one can change, such as new weights or a diversity rule like "max 2 songs per artist", without rewriting the other.
 
+### Data flow
+
 ```
-UserProfile ──┐
-              ├─► score_song() for each Song ─► sort by score ─► top k + reasons
-songs.csv ────┘
+INPUT                      PROCESS (the loop)                         OUTPUT (the ranking)
+─────                      ──────────────────                         ────────────────────
+user_prefs (dict) ─┐       for each song in songs.csv:
+                   ├────►    genre match?      +2.0                   sort all 20 by score
+songs.csv          │         mood match?       +1.5         ────►     (ties → title A–Z)
+ └► load_songs() ──┘         energy closeness  0–1.0                  return top k
+    (20 dicts)               acoustic fit      0–0.5                  (song, score, "because…")
+                             → (score, reasons)
 ```
+
+### Expected biases and limitations
+
+- **Genre dominates.** A genre match (+2.0) is the single biggest component, worth more than a mood match (+1.5). A wrong-genre song can only win by matching both mood and energy well, so a great song in a neighboring genre ("indie pop" for a "pop" fan) usually ranks below a so-so song in the exact genre.
+- **Exact string matching.** "relaxed", "focused" and "chill" are treated as completely different moods, and so are "pop" and "indie pop". Close matches earn zero points.
+- **Uneven catalog.** Lofi has 3 songs while most genres have 1, so lofi fans get a full top 3 of genre matches and metal fans get one match followed by filler.
+- **No sense of sad vs. happy.** Valence isn't scored, so for a calm listener a sad ballad and a peaceful one look nearly the same.
+- **Filter bubble.** Like any content-based system, it only recommends more of what the user already said they like. It never surprises them the way collaborative filtering can.
 
 ---
 

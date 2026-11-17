@@ -13,10 +13,15 @@ from src.recommender import load_songs, recommend_songs
 
 
 def main() -> None:
-    songs = load_songs("data/songs.csv") 
+    songs = load_songs("data/songs.csv")
 
-    # Starter example profile
-    user_prefs = {"genre": "pop", "mood": "happy", "energy": 0.8}
+    # Taste profile: a late-night study listener who wants calm, acoustic-leaning lofi
+    user_prefs = {
+        "genre": "lofi",          # favorite_genre
+        "mood": "chill",          # favorite_mood
+        "energy": 0.40,           # target_energy (0.0 = very calm, 1.0 = very intense)
+        "likes_acoustic": True,   # prefers organic / acoustic sound over electronic
+    }
 
     recommendations = recommend_songs(user_prefs, songs, k=5)
 
