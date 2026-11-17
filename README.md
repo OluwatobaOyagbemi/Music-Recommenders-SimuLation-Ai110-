@@ -378,11 +378,6 @@ See [model_card.md](model_card.md) sections 6–7 for the full analysis.
 
 Full model card: [**model_card.md**](model_card.md)
 
-> **Draft. Rewrite in your own words.**
+Before this project I thought recommenders were some kind of complicated AI magic. Mine turned out to be: give each song points for matching what the user wants, add them up, and sort. That's it. And it still worked pretty well. When I ran the Chill Lofi profile, I got exactly the kind of songs I'd put on to study. The "smart" part isn't the code. It's the data and the weights you choose.
 
-Building this showed me that a recommender is really just a way of turning preferences into numbers and sorting. Each song gets points for matching the user's genre, mood, energy and acoustic taste, and the "recommendation" is simply the top of the sorted list. What makes it feel smart is the data and the weights, not complicated code. Even this tiny version produced lists that felt right for clear tastes like "chill lofi."
-
-Bias came from places I didn't expect. The weights are opinions: making genre worth twice as much as energy meant a quiet song beat what a "high-energy" user asked for. The uneven catalog meant lofi fans got great lists while metal fans got one real match and four fillers. Exact label matching treated "indie pop" as unrelated to "pop." None of that was intentional, which is the point: in a real app with millions of users, these small design choices decide which artists get heard and which users get served well.
-
-
-
+The bias part surprised me more. I never meant to favor anyone, but I did anyway. Making genre worth 2 points and energy worth 1 meant someone asking for high-energy music got a quiet folk song. Lofi fans got three real matches while metal fans got one and then random filler, just because of what was in the CSV. And "indie pop" got zero credit for a "pop" fan because the labels didn't match exactly. If small choices like that matter in a 20-song project, they must matter a lot in an app with millions of users deciding which artists get heard.
