@@ -347,19 +347,19 @@ Profile: Dead Center (energy 0.5, no genre or mood)
   energy=0.5
 ================================================================
 1. Velvet Hours by Amara Lane  [r&b/romantic]
-   Score: 1.00 / 5.00
+   Score: 1.00 / 1.00
      - energy 0.50 vs target 0.50 (+1.00)
 2. Dusty Backroads by Wade Hollis  [country/nostalgic]
-   Score: 0.95 / 5.00
+   Score: 0.95 / 1.00
      - energy 0.55 vs target 0.50 (+0.95)
 3. Midnight Coding by LoRoom  [lofi/chill]
-   Score: 0.92 / 5.00
+   Score: 0.92 / 1.00
      - energy 0.42 vs target 0.50 (+0.92)
 4. Focus Flow by LoRoom  [lofi/focused]
-   Score: 0.90 / 5.00
+   Score: 0.90 / 1.00
      - energy 0.40 vs target 0.50 (+0.90)
 5. Island Time by Sol Collective  [reggae/uplifting]
-   Score: 0.90 / 5.00
+   Score: 0.90 / 1.00
      - energy 0.60 vs target 0.50 (+0.90)
 ```
 

@@ -236,6 +236,132 @@ I ran four edge-case profiles alongside three normal ones. Full output and analy
 
 ---
 
+## Stretch Features
+
+All four stretch challenges are implemented. The default `python -m src.main` output is unchanged; new behavior is turned on with flags:
+
+```bash
+python -m src.main --table                      # summary table with reasons
+python -m src.main --mode mood-first            # genre-first | mood-first | energy-focused
+python -m src.main --diverse                    # diversity penalty for repeated artists/genres
+python -m src.main --profile "night owl" --table
+```
+
+### 1. Advanced song features
+
+Five new columns in `data/songs.csv`. Each one is scored **only if a profile asks for it**, so older profiles behave exactly as before.
+
+| Column | Type | Profile key | Scoring |
+|---|---|---|---|
+| `popularity` | 0–100 | `popularity` (target) | up to +0.5, closer is better |
+| `release_decade` | 1960–2020 | `decade` | up to +0.5, 0 points if 50+ years apart |
+| `mood_tags` | e.g. `nostalgic\|warm\|summer` | `tags` (list) | +0.5 per matching tag, max +1.0 |
+| `instrumentalness` | 0–1 | `wants_instrumental` (bool) | up to +0.5 |
+| `explicit` | 0/1 | `avoid_explicit` (bool) | −1.0 if explicit and avoided |
+
+**Finding:** the explicit penalty is a *soft* penalty. In "Clean Party Mix" (pop, intense, avoids explicit), *Gym Hero* is explicit but still ranks #1 (4.93 vs. 4.32), because it matches everything else. A parent using "avoid explicit" would expect it to be removed entirely, so this should probably become a hard filter.
+
+### 2. Scoring modes (Strategy pattern)
+
+| Mode | genre | mood | energy | tags | Idea |
+|---|---|---|---|---|---|
+| `genre-first` (default) | 2.0 | 1.5 | 1.0 | 1.0 | the original recipe |
+| `mood-first` | 1.0 | 2.5 | 1.0 | 1.5 | the vibe matters more than the label |
+| `energy-focused` | 0.75 | 0.75 | 3.0 | 1.0 | how intense it feels matters most |
+
+**What changed between modes:**
+- **High-Energy Pop:** in `mood-first`, *Rooftop Lights* (happy indie pop) moves above *Gym Hero* (intense pop) to #2. That fits a "happy" request better.
+- **Sad but Hyped:** `energy-focused` is the only mode that fixes this profile. *Campfire Anthem* (energy 0.72) moves above *Paper Boats* (0.30) to #1, and the rest of the list fills with high-energy songs. This was the main weakness found in the evaluation.
+- **Chill Lofi:** the same songs appear in every mode, just in a slightly different order. A clear, consistent taste holds up regardless of the weights.
+
+See [ai_interactions.md](ai_interactions.md) for why each mode is a weights object instead of a separate class.
+
+### 3. Diversity penalty
+
+With `--diverse`, the top k are picked one at a time. Each candidate loses **1.0 for every earlier pick by the same artist** and **0.5 for every earlier pick in the same genre**. For Chill Lofi, *Focus Flow* (lofi, by LoRoom, the same artist as *Midnight Coding*) drops from #3 to #5, and two other genres move up:
+
+```
+Profile: Chill Lofi
++----+--------------------------+----------------------+---------------+------------------------------------------------+
+| #  | Song                     | Genre / Mood         | Score         | Reasons                                        |
++====+==========================+======================+===============+================================================+
+| 1  | Library Rain             | lofi / chill         | 4.88 / 5.00   | - genre match: lofi (+2.0)                     |
+|    | by Paper Lanterns        |                      |               | - mood match: chill (+1.5)                     |
+|    |                          |                      |               | - energy 0.35 vs target 0.40 (+0.95)           |
+|    |                          |                      |               | - acoustic fit (+0.43)                         |
++----+--------------------------+----------------------+---------------+------------------------------------------------+
+| 2  | Midnight Coding          | lofi / chill         | 4.34 / 5.00   | - genre match: lofi (+2.0)                     |
+|    | by LoRoom                |                      |               | - mood match: chill (+1.5)                     |
+|    |                          |                      |               | - energy 0.42 vs target 0.40 (+0.98)           |
+|    |                          |                      |               | - acoustic fit (+0.35)                         |
+|    |                          |                      |               | - diversity: genre already listed (-0.50)      |
++----+--------------------------+----------------------+---------------+------------------------------------------------+
+| 3  | Spacewalk Thoughts       | ambient / chill      | 2.84 / 5.00   | - mood match: chill (+1.5)                     |
+|    | by Orbit Bloom           |                      |               | - energy 0.28 vs target 0.40 (+0.88)           |
+|    |                          |                      |               | - acoustic fit (+0.46)                         |
++----+--------------------------+----------------------+---------------+------------------------------------------------+
+| 4  | Coffee Shop Stories      | jazz / relaxed       | 1.42 / 5.00   | - energy 0.37 vs target 0.40 (+0.97)           |
+|    | by Slow Stereo           |                      |               | - acoustic fit (+0.45)                         |
++----+--------------------------+----------------------+---------------+------------------------------------------------+
+| 5  | Focus Flow               | lofi / focused       | 1.39 / 5.00   | - genre match: lofi (+2.0)                     |
+|    | by LoRoom                |                      |               | - energy 0.40 vs target 0.40 (+1.00)           |
+|    |                          |                      |               | - acoustic fit (+0.39)                         |
+|    |                          |                      |               | - diversity: artist already listed (-1.00)     |
+|    |                          |                      |               | - diversity: genre already listed (-1.00)      |
++----+--------------------------+----------------------+---------------+------------------------------------------------+
+```
+
+### 4. Summary table
+
+`--table` prints an ASCII table with every reason behind each score. It uses no extra library. This example uses the advanced features:
+
+```
+Profile: Nostalgic Night Owl (tags, decade, instrumental)
++----+--------------------------+----------------------+---------------+------------------------------------------------+
+| #  | Song                     | Genre / Mood         | Score         | Reasons                                        |
++====+==========================+======================+===============+================================================+
+| 1  | Blue Hour Ballad         | jazz / melancholic   | 6.81 / 7.50   | - genre match: jazz (+2.0)                     |
+|    | by Nina Ross             |                      |               | - mood match: melancholic (+1.5)               |
+|    |                          |                      |               | - energy 0.33 vs target 0.35 (+0.98)           |
+|    |                          |                      |               | - acoustic fit (+0.40)                         |
+|    |                          |                      |               | - mood tags: nocturnal, nostalgic (+1.00)      |
+|    |                          |                      |               | - 1960s vs 1980s (+0.30)                       |
+|    |                          |                      |               | - popularity 31 vs target 35 (+0.48)           |
+|    |                          |                      |               | - instrumental fit (+0.15)                     |
++----+--------------------------+----------------------+---------------+------------------------------------------------+
+| 2  | Coffee Shop Stories      | jazz / relaxed       | 5.64 / 7.50   | - genre match: jazz (+2.0)                     |
+|    | by Slow Stereo           |                      |               | - energy 0.37 vs target 0.35 (+0.98)           |
+|    |                          |                      |               | - acoustic fit (+0.45)                         |
+|    |                          |                      |               | - mood tags: warm, nostalgic (+1.00)           |
+|    |                          |                      |               | - 1990s vs 1980s (+0.40)                       |
+|    |                          |                      |               | - popularity 41 vs target 35 (+0.47)           |
+|    |                          |                      |               | - instrumental fit (+0.35)                     |
++----+--------------------------+----------------------+---------------+------------------------------------------------+
+| 3  | Moonlit Sonata Redux     | classical /          | 4.24 / 7.50   | - mood match: melancholic (+1.5)               |
+|    | by Clara Vey             | melancholic          |               | - energy 0.22 vs target 0.35 (+0.87)           |
+|    |                          |                      |               | - acoustic fit (+0.48)                         |
+|    |                          |                      |               | - 1970s vs 1980s (+0.40)                       |
+|    |                          |                      |               | - popularity 33 vs target 35 (+0.49)           |
+|    |                          |                      |               | - instrumental fit (+0.49)                     |
++----+--------------------------+----------------------+---------------+------------------------------------------------+
+| 4  | Dusty Backroads          | country / nostalgic  | 2.96 / 7.50   | - energy 0.55 vs target 0.35 (+0.80)           |
+|    | by Wade Hollis           |                      |               | - acoustic fit (+0.34)                         |
+|    |                          |                      |               | - mood tags: nostalgic, warm (+1.00)           |
+|    |                          |                      |               | - 1990s vs 1980s (+0.40)                       |
+|    |                          |                      |               | - popularity 54 vs target 35 (+0.41)           |
+|    |                          |                      |               | - instrumental fit (+0.01)                     |
++----+--------------------------+----------------------+---------------+------------------------------------------------+
+| 5  | Night Drive Loop         | synthwave / moody    | 2.90 / 7.50   | - energy 0.75 vs target 0.35 (+0.60)           |
+|    | by Neon Echo             |                      |               | - acoustic fit (+0.11)                         |
+|    |                          |                      |               | - mood tags: nocturnal, nostalgic (+1.00)      |
+|    |                          |                      |               | - 1980s vs 1980s (+0.50)                       |
+|    |                          |                      |               | - popularity 57 vs target 35 (+0.39)           |
+|    |                          |                      |               | - instrumental fit (+0.30)                     |
++----+--------------------------+----------------------+---------------+------------------------------------------------+
+```
+
+---
+
 ## Limitations and Risks
 
 - **Tiny, uneven catalog:** 20 made-up songs, and most genres have only one.
