@@ -131,16 +131,73 @@ You can add more tests in `tests/test_recommender.py`.
 
 ## Sample Recommendation Output
 
-Paste a sample of your recommender's output here as a text block so a reader can see what it produces:
+Output of `python -m src.main` for the default pop/happy profile and the late-night study profile:
 
 ```
-# e.g.:
-# User profile: genre=indie, mood=chill, energy=low
-# Recommendations:
-#   1. ...
-#   2. ...
-#   3. ...
+Loaded songs: 20
+
+================================================================
+Profile: Default pop/happy
+  genre=pop, mood=happy, energy=0.8, likes_acoustic=False
+================================================================
+1. Sunrise City by Neon Echo  [pop/happy]
+   Score: 4.89 / 5.00
+     - genre match: pop (+2.0)
+     - mood match: happy (+1.5)
+     - energy 0.82 vs target 0.80 (+0.98)
+     - non-acoustic fit (+0.41)
+2. Gym Hero by Max Pulse  [pop/intense]
+   Score: 3.35 / 5.00
+     - genre match: pop (+2.0)
+     - energy 0.93 vs target 0.80 (+0.87)
+     - non-acoustic fit (+0.47)
+3. Rooftop Lights by Indigo Parade  [indie pop/happy]
+   Score: 2.79 / 5.00
+     - mood match: happy (+1.5)
+     - energy 0.76 vs target 0.80 (+0.96)
+     - non-acoustic fit (+0.33)
+4. Concrete Crown by Block Theory  [hip-hop/confident]
+   Score: 1.42 / 5.00
+     - energy 0.78 vs target 0.80 (+0.98)
+     - non-acoustic fit (+0.44)
+5. Storm Runner by Voltline  [rock/intense]
+   Score: 1.34 / 5.00
+     - energy 0.91 vs target 0.80 (+0.89)
+     - non-acoustic fit (+0.45)
+
+================================================================
+Profile: Late-night study listener
+  genre=lofi, mood=chill, energy=0.4, likes_acoustic=True
+================================================================
+1. Library Rain by Paper Lanterns  [lofi/chill]
+   Score: 4.88 / 5.00
+     - genre match: lofi (+2.0)
+     - mood match: chill (+1.5)
+     - energy 0.35 vs target 0.40 (+0.95)
+     - acoustic fit (+0.43)
+2. Midnight Coding by LoRoom  [lofi/chill]
+   Score: 4.84 / 5.00
+     - genre match: lofi (+2.0)
+     - mood match: chill (+1.5)
+     - energy 0.42 vs target 0.40 (+0.98)
+     - acoustic fit (+0.35)
+3. Focus Flow by LoRoom  [lofi/focused]
+   Score: 3.39 / 5.00
+     - genre match: lofi (+2.0)
+     - energy 0.40 vs target 0.40 (+1.00)
+     - acoustic fit (+0.39)
+4. Spacewalk Thoughts by Orbit Bloom  [ambient/chill]
+   Score: 2.84 / 5.00
+     - mood match: chill (+1.5)
+     - energy 0.28 vs target 0.40 (+0.88)
+     - acoustic fit (+0.46)
+5. Coffee Shop Stories by Slow Stereo  [jazz/relaxed]
+   Score: 1.42 / 5.00
+     - energy 0.37 vs target 0.40 (+0.97)
+     - acoustic fit (+0.45)
 ```
+
+The pop/happy results match what you'd expect. *Sunrise City* is the only song that matches both genre and mood, so it wins clearly. *Gym Hero* (pop, but intense) and *Rooftop Lights* (happy, but indie pop) each match one of the two. After that, songs score only on energy closeness and non-acoustic sound.
 
 **Screenshot or video** *(optional)*: <!-- Insert a screenshot or demo video link here -->
 

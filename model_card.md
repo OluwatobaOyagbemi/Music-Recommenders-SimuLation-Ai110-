@@ -32,6 +32,23 @@ Prompts:
 
 Avoid code here. Pretend you are explaining the idea to a friend who does not program.
 
+**How it works, in plain language**
+
+Imagine a friend picking songs for you from a stack of 20 records. Before they start, you tell them four things: your favorite genre, the mood you're in, how energetic you want the music to be (from very calm to very intense), and whether you like acoustic, "unplugged" sound.
+
+Your friend then goes through every record one at a time and gives it points:
+
+- **Right genre:** 2 points. This counts most, because genre is usually the most stable part of someone's taste.
+- **Right mood:** 1.5 points.
+- **Right energy level:** up to 1 point. A song gets the full point if its energy is exactly what you asked for and fewer points the further away it is, whether it's too calm or too intense. This means asking for "medium energy" gets you medium-energy songs, not the loudest songs in the stack.
+- **Acoustic fit:** up to half a point. If you like acoustic sound, more acoustic songs earn more; if you don't, more electronic songs earn more.
+
+The best possible score is 5. Once every record has a score, your friend sorts the stack from highest to lowest and hands you the top five. Each one comes with a note listing the points it earned, like "genre match: pop (+2.0)", so you can see exactly why it was picked.
+
+The system doesn't look at what other people listen to, only at the songs' own descriptions. That means it can recommend a brand-new song right away, but it will mostly give you more of what you already said you like.
+
+**Changes from the starter logic:** The starter code returned the first few songs in the file no matter who was asking. This version scores every song against the user's taste, rewards being *close* to the target energy instead of simply higher or lower, adds an acoustic preference, and explains every recommendation.
+
 ---
 
 ## 4. Data  

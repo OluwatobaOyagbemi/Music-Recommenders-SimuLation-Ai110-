@@ -1,5 +1,5 @@
 import csv
-from typing import List, Dict, Tuple, Optional
+from typing import Any, List, Dict, Tuple
 from dataclasses import dataclass, asdict
 
 @dataclass
@@ -39,7 +39,7 @@ ACOUSTIC_WEIGHT = 0.5
 NUMERIC_FIELDS = ("energy", "tempo_bpm", "valence", "danceability", "acousticness")
 
 
-def _profile_to_prefs(user: "UserProfile") -> Dict:
+def _profile_to_prefs(user: "UserProfile") -> Dict[str, Any]:
     """Converts a UserProfile into the dict format used by score_song()."""
     return {
         "genre": user.favorite_genre,
@@ -55,27 +55,28 @@ class Recommender:
     Required by tests/test_recommender.py
     """
     def __init__(self, songs: List[Song]):
+        """Stores the catalog of Song objects to recommend from."""
         self.songs = songs
 
     def recommend(self, user: UserProfile, k: int = 5) -> List[Song]:
+        """Returns the top k Song objects for this user, highest score first."""
         prefs = _profile_to_prefs(user)
         scored = [(song, score_song(prefs, asdict(song))[0]) for song in self.songs]
-        scored.sort(key=lambda pair: (-pair[1], pair[0].title))
-        return [song for song, _ in scored[:k]]
+        ranked = sorted(scored, key=lambda pair: (-pair[1], pair[0].title))
+        return [song for song, _ in ranked[:k]]
 
     def explain_recommendation(self, user: UserProfile, song: Song) -> str:
+        """Returns a one-line explanation of why a song scored the way it did."""
         score, reasons = score_song(_profile_to_prefs(user), asdict(song))
         return f"Score {score:.2f}: " + "; ".join(reasons)
 
 
-def load_songs(csv_path: str) -> List[Dict]:
-    """
-    Loads songs from a CSV file.
-    Required by src/main.py
-    """
-    songs = []
+def load_songs(csv_path: str) -> List[Dict[str, Any]]:
+    """Reads songs.csv into a list of dicts, converting numeric columns to int/float."""
+    songs: List[Dict[str, Any]] = []
     with open(csv_path, newline="", encoding="utf-8") as f:
-        for row in csv.DictReader(f):
+        for raw in csv.DictReader(f):
+            row: Dict[str, Any] = dict(raw)
             row["id"] = int(row["id"])
             for field in NUMERIC_FIELDS:
                 row[field] = float(row[field])
@@ -83,14 +84,8 @@ def load_songs(csv_path: str) -> List[Dict]:
     return songs
 
 
-def score_song(user_prefs: Dict, song: Dict) -> Tuple[float, List[str]]:
-    """
-    Scores a single song against user preferences.
-    Required by recommend_songs() and src/main.py
-
-    user_prefs keys: genre, mood, energy (0-1), likes_acoustic (optional bool).
-    Returns (score, reasons), max score 5.0.
-    """
+def score_song(user_prefs: Dict[str, Any], song: Dict[str, Any]) -> Tuple[float, List[str]]:
+    """Scores one song against user_prefs and returns (score out of 5.0, list of reasons)."""
     score = 0.0
     reasons: List[str] = []
 
@@ -122,17 +117,10 @@ def score_song(user_prefs: Dict, song: Dict) -> Tuple[float, List[str]]:
     return score, reasons
 
 
-def recommend_songs(user_prefs: Dict, songs: List[Dict], k: int = 5) -> List[Tuple[Dict, float, str]]:
-    """
-    Functional implementation of the recommendation logic.
-    Required by src/main.py
-
-    Ranking Rule: score every song, sort by score (highest first, ties by title),
-    return the top k as (song, score, explanation).
-    """
-    scored = []
+def recommend_songs(user_prefs: Dict[str, Any], songs: List[Dict[str, Any]], k: int = 5) -> List[Tuple[Dict[str, Any], float, str]]:
+    """Scores every song, sorts highest first (ties by title), and returns the top k as (song, score, explanation)."""
+    scored: List[Tuple[Dict[str, Any], float, str]] = []
     for song in songs:
-        score, reasons = score_song(user_prefs, song)
+        score, reasons = score_song(user_prefs, song)  # score_song is the "judge"
         scored.append((song, score, "; ".join(reasons)))
-    scored.sort(key=lambda item: (-item[1], item[0]["title"]))
-    return scored[:k]
+    return sorted(scored, key=lambda item: (-item[1], str(item[0]["title"])))[:k]
