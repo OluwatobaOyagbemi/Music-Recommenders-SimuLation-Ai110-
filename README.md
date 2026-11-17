@@ -131,13 +131,13 @@ You can add more tests in `tests/test_recommender.py`.
 
 ## Sample Recommendation Output
 
-Output of `python -m src.main` for the default pop/happy profile and the late-night study profile:
+Output of `python -m src.main` for the first two profiles (all seven are in [model_card.md](model_card.md#7-evaluation)):
 
 ```
 Loaded songs: 20
 
 ================================================================
-Profile: Default pop/happy
+Profile: High-Energy Pop
   genre=pop, mood=happy, energy=0.8, likes_acoustic=False
 ================================================================
 1. Sunrise City by Neon Echo  [pop/happy]
@@ -166,7 +166,7 @@ Profile: Default pop/happy
      - non-acoustic fit (+0.45)
 
 ================================================================
-Profile: Late-night study listener
+Profile: Chill Lofi
   genre=lofi, mood=chill, energy=0.4, likes_acoustic=True
 ================================================================
 1. Library Rain by Paper Lanterns  [lofi/chill]
@@ -197,7 +197,7 @@ Profile: Late-night study listener
      - acoustic fit (+0.45)
 ```
 
-The pop/happy results match what you'd expect. *Sunrise City* is the only song that matches both genre and mood, so it wins clearly. *Gym Hero* (pop, but intense) and *Rooftop Lights* (happy, but indie pop) each match one of the two. After that, songs score only on energy closeness and non-acoustic sound.
+The High-Energy Pop results match what you'd expect. *Sunrise City* is the only song that matches both genre and mood, so it wins clearly. *Gym Hero* (pop, but intense) and *Rooftop Lights* (happy, but indie pop) each match one of the two. After that, songs score only on energy closeness and non-acoustic sound.
 
 **Screenshot or video** *(optional)*: <!-- Insert a screenshot or demo video link here -->
 
@@ -205,11 +205,34 @@ The pop/happy results match what you'd expect. *Sunrise City* is the only song t
 
 ## Experiments You Tried
 
-Use this section to document the experiments you ran. For example:
+### Experiment 1: Weight shift (genre halved, energy doubled)
 
-- What happened when you changed the weight on genre from 2.0 to 0.5
-- What happened when you added tempo or valence to the score
-- How did your system behave for different types of users
+**Change:** in `src/recommender.py`, `GENRE_WEIGHT` went from 2.0 to 1.0 and `ENERGY_WEIGHT` from 1.0 to 2.0. Mood (1.5) and acoustic (0.5) stayed the same. **Is the math still valid?** Yes. The maximum score is still 1.0 + 1.5 + 2.0 + 0.5 = **5.0**, every component is still between 0 and its weight, and energy closeness is still `1 − |gap|`, so no score can go negative or above 5. The weights were set back to normal after the run.
+
+**Top 5, baseline vs. experiment:**
+
+| Profile | Baseline top 3 | Experiment top 3 |
+|---|---|---|
+| High-Energy Pop | Sunrise City, **Gym Hero**, Rooftop Lights | Sunrise City, **Rooftop Lights**, Gym Hero |
+| Chill Lofi | Library Rain, Midnight Coding, **Focus Flow** | Library Rain, Midnight Coding, **Spacewalk Thoughts** |
+| Deep Intense Rock | Storm Runner, Gym Hero, Strobe Heart | *(same)* |
+| Sad but Hyped | **Paper Boats**, Campfire Anthem, Storm Runner | **Paper Boats**, Campfire Anthem, Storm Runner |
+| Acoustic Metalhead | Iron Tempest, Campfire Anthem, Storm Runner | Iron Tempest, Strobe Heart, Gym Hero |
+
+**More accurate or just different?** A bit of both:
+- **More accurate for High-Energy Pop.** *Rooftop Lights* (happy indie pop) moved above *Gym Hero* (intense workout pop). For someone who asked for *happy* pop, that feels right.
+- **Different but not clearly better for Chill Lofi.** *Spacewalk Thoughts* (chill ambient) passed *Focus Flow* (focused lofi). Both are reasonable study music.
+- **Didn't fix the main problem.** For "Sad but Hyped" (wants energy 0.9), *Paper Boats* (energy 0.30) still ranks #1. Genre + mood (2.5 points) still beats the energy penalty (0.6 gap × 2 = 1.2 points).
+- **Made one thing worse.** The Acoustic Metalhead's only acoustic-leaning pick (*Campfire Anthem*) dropped out of the top 3, replaced by electronic EDM and pop.
+
+**Conclusion:** I kept the original weights. The shift helped one profile, hurt another, and didn't fix the biggest weakness, which is that matching labels can override a big energy mismatch.
+
+### Experiment 2: Adversarial profiles
+
+I ran four edge-case profiles alongside three normal ones. Full output and analysis are in [model_card.md](model_card.md#7-evaluation). Main findings:
+- Conflicting preferences are settled by the labels, not the numbers.
+- An unknown genre fails silently.
+- *Gym Hero* shows up for 4 of the 7 profiles.
 
 ---
 

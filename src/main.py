@@ -8,17 +8,46 @@ from src.recommender import load_songs, recommend_songs
 
 # Taste profiles to try. Each is a dict of target values for the scored features.
 PROFILES = {
-    "Default pop/happy": {
+    # --- Core profiles ---
+    "High-Energy Pop": {
         "genre": "pop",
         "mood": "happy",
         "energy": 0.80,
         "likes_acoustic": False,
     },
-    "Late-night study listener": {
+    "Chill Lofi": {
         "genre": "lofi",          # favorite_genre
         "mood": "chill",          # favorite_mood
         "energy": 0.40,           # target_energy (0.0 = very calm, 1.0 = very intense)
         "likes_acoustic": True,   # prefers organic / acoustic sound over electronic
+    },
+    "Deep Intense Rock": {
+        "genre": "rock",
+        "mood": "intense",
+        "energy": 0.90,
+        "likes_acoustic": False,
+    },
+    # --- Adversarial / edge-case profiles ---
+    "Sad but Hyped (conflict: sad mood, 0.9 energy)": {
+        "genre": "folk",
+        "mood": "sad",
+        "energy": 0.90,
+        "likes_acoustic": True,
+    },
+    "Acoustic Metalhead (conflict: metal + loves acoustic)": {
+        "genre": "metal",
+        "mood": "angry",
+        "energy": 0.95,
+        "likes_acoustic": True,
+    },
+    "Ghost Genre (genre/mood not in catalog)": {
+        "genre": "k-pop",
+        "mood": "euphoric",
+        "energy": 0.70,
+        "likes_acoustic": False,
+    },
+    "Dead Center (energy 0.5, no genre or mood)": {
+        "energy": 0.50,
     },
 }
 
