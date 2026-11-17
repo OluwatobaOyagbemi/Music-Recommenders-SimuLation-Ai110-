@@ -238,28 +238,25 @@ I ran four edge-case profiles alongside three normal ones. Full output and analy
 
 ## Limitations and Risks
 
-Summarize some limitations of your recommender.
+- **Tiny, uneven catalog:** 20 made-up songs, and most genres have only one.
+- **Labels beat numbers:** a genre + mood match (3.5 points) outweighs even a huge energy mismatch (at most −1 point), so users with conflicting tastes get results that ignore part of what they asked for.
+- **Exact matching only:** "indie pop" gets no credit for a "pop" fan, and "relaxed" gets none for "chill".
+- **No warning on bad matches:** an unknown genre still produces a confident-looking top 5.
+- **It doesn't understand** lyrics, language, or how happy vs. sad a song sounds (valence isn't scored).
 
-Examples:
-
-- It only works on a tiny catalog
-- It does not understand lyrics or language
-- It might over favor one genre or mood
-
-You will go deeper on this in your model card.
+See [model_card.md](model_card.md) sections 6–7 for the full analysis.
 
 ---
 
 ## Reflection
 
-Read and complete `model_card.md`:
+Full model card: [**model_card.md**](model_card.md)
 
-[**Model Card**](model_card.md)
+> **Draft. Rewrite in your own words.**
 
-Write 1 to 2 paragraphs here about what you learned:
+Building this showed me that a recommender is really just a way of turning preferences into numbers and sorting. Each song gets points for matching the user's genre, mood, energy and acoustic taste, and the "recommendation" is simply the top of the sorted list. What makes it feel smart is the data and the weights, not complicated code. Even this tiny version produced lists that felt right for clear tastes like "chill lofi."
 
-- about how recommenders turn data into predictions
-- about where bias or unfairness could show up in systems like this
+Bias came from places I didn't expect. The weights are opinions: making genre worth twice as much as energy meant a quiet song beat what a "high-energy" user asked for. The uneven catalog meant lofi fans got great lists while metal fans got one real match and four fillers. Exact label matching treated "indie pop" as unrelated to "pop." None of that was intentional, which is the point: in a real app with millions of users, these small design choices decide which artists get heard and which users get served well.
 
 
 
